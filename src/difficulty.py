@@ -17,8 +17,7 @@ class Difficulty:
         }
         self.selected = "Easy"
 
-    def update(self, delta_time=1 / 60):
-        mouse = pygame.mouse.get_pos()
+    def update(self, mouse, delta_time=1 / 60):
         for card in self.cards.values():
             card.update(mouse, delta_time)
 
@@ -30,11 +29,9 @@ class Difficulty:
         for name, card in self.cards.items():
             card.draw(screen, selected=name == self.selected)
 
-    def handle_click(self):
-        mouse = pygame.mouse.get_pos()
-        pressed = pygame.mouse.get_pressed()[0]
+    def handle_click(self, mouse):
         for name, card in self.cards.items():
-            if card.clicked(mouse, pressed):
+            if card.clicked(mouse):
                 self.selected = name
                 return name
         return None

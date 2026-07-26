@@ -33,11 +33,13 @@ class Button:
         self.hover_amount = 0.0
         self.press_amount = 0.0
         self.is_hovered = False
+        self.just_pressed = False
+        self.was_pressed = False
 
-    def update(self, mouse_pos, mouse_pressed=False, delta_time=1 / 60):
+    def update(self, mouse_pos, delta_time=1 / 60):
         self.is_hovered = self.rect.collidepoint(mouse_pos)
         target_hover = 1.0 if self.is_hovered else 0.0
-        target_press = 1.0 if self.is_hovered and mouse_pressed else 0.0
+        target_press = 0.0
         self.hover_amount += (target_hover - self.hover_amount) * min(1.0, delta_time * 12)
         self.press_amount += (target_press - self.press_amount) * min(1.0, delta_time * 18)
 
@@ -58,8 +60,9 @@ class Button:
         text = self.font.render(self.text, True, WHITE if self.accent else TEXT_COLOR)
         screen.blit(text, text.get_rect(center=draw_rect.center))
 
-    def clicked(self, mouse_pos, mouse_pressed):
-        return self.rect.collidepoint(mouse_pos) and mouse_pressed
+    def clicked(self, mouse_pos):
+        """Handle a single MOUSEBUTTONDOWN event rather than held mouse state."""
+        return self.rect.collidepoint(mouse_pos)
 
 
 class DifficultyCard:
@@ -93,5 +96,5 @@ class DifficultyCard:
         screen.blit(title, (rect.x + 30, rect.y + 28))
         screen.blit(subtitle, (rect.x + 30, rect.y + 78))
 
-    def clicked(self, mouse_pos, mouse_pressed):
-        return self.rect.collidepoint(mouse_pos) and mouse_pressed
+    def clicked(self, mouse_pos):
+        return self.rect.collidepoint(mouse_pos)

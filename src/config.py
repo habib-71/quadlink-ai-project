@@ -1,6 +1,7 @@
 """Shared QuadLink display configuration and visual theme."""
 
 import os
+import sys
 
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 720
@@ -28,9 +29,11 @@ WHITE = (245, 248, 255)
 BLACK = (7, 11, 24)
 SUCCESS = (75, 207, 151)
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+BASE_DIR = getattr(sys, "_MEIPASS", os.path.dirname(os.path.dirname(__file__)))
 ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 FONT_DIR = os.path.join(ASSETS_DIR, "fonts")
 SOUND_DIR = os.path.join(ASSETS_DIR, "sounds")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+STATE_FILE = os.path.join(DATA_DIR, "quadlink_state.json")
 POP_BOLD = os.path.join(FONT_DIR, "Poppins-Bold.ttf")
 POP_REGULAR = os.path.join(FONT_DIR, "Poppins-Regular.ttf")

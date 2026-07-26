@@ -26,7 +26,8 @@ class BoardRenderer:
         target = 1.0 if col is not None else 0.0
         self.hover_amount += (target - self.hover_amount) * min(1.0, delta_time * 14)
 
-    def draw(self, screen, board):
+    def draw(self, screen, board, winning_cells=()):
+        winning_cells = set(winning_cells)
         board_rect = pygame.Rect(self.board_x, self.board_y, self.cell_size * board.COLS, self.cell_size * board.ROWS)
         draw_shadow(screen, board_rect, radius=26, offset=10, alpha=130)
         pygame.draw.rect(screen, BOARD_DARK, board_rect, border_radius=26)
@@ -43,6 +44,8 @@ class BoardRenderer:
                     color = RED if value == board.PLAYER else YELLOW
                     highlight = RED_LIGHT if value == board.PLAYER else YELLOW_LIGHT
                     self.draw_disc(screen, center_x, center_y, color, highlight)
+                    if (row, col) in winning_cells:
+                        pygame.draw.circle(screen, (255, 255, 255), (center_x, center_y), self.piece_radius + 5, width=3)
 
     def draw_disc(self, screen, x, y, color, highlight):
         pygame.draw.circle(screen, (13, 19, 41), (x, y + 3), self.piece_radius)

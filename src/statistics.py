@@ -37,6 +37,21 @@ class GameStats:
     def reset(self):
         self.__init__()
 
+    def to_dict(self):
+        return {
+            "games_played": self.games_played,
+            "moves_played": self.moves_played,
+            "player_one_wins": self.player_one_wins,
+            "player_two_wins": self.player_two_wins,
+            "ai_wins": self.ai_wins,
+            "draws": self.draws,
+        }
+
+    def load_dict(self, values):
+        for key in self.to_dict():
+            value = values.get(key, 0)
+            setattr(self, key, value if isinstance(value, int) and value >= 0 else 0)
+
 
 class Statistics:
     """Displays session statistics with reset and back actions."""
@@ -50,19 +65,15 @@ class Statistics:
         self.reset_button = Button(410, 584, 180, 48, "Reset stats", self.button_font)
         self.back_button = Button(610, 584, 180, 48, "←  Back", self.button_font, accent=True)
 
-    def update(self, delta_time=1 / 60):
-        mouse = pygame.mouse.get_pos()
-        pressed = pygame.mouse.get_pressed()[0]
-        self.reset_button.update(mouse, pressed, delta_time)
-        self.back_button.update(mouse, pressed, delta_time)
+    def update(self, mouse, delta_time=1 / 60):
+        self.reset_button.update(mouse, delta_time)
+        self.back_button.update(mouse, delta_time)
 
-    def handle_click(self):
-        mouse = pygame.mouse.get_pos()
-        pressed = pygame.mouse.get_pressed()[0]
-        if self.reset_button.clicked(mouse, pressed):
+    def handle_click(self, mouse):
+        if self.reset_button.clicked(mouse):
             self.stats.reset()
             return "reset"
-        if self.back_button.clicked(mouse, pressed):
+        if self.back_button.clicked(mouse):
             return "back"
         return None
 

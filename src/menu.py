@@ -18,17 +18,13 @@ class Menu:
             Button(425, 614, 350, 50, "Exit", button_font),
         ]
 
-    def update(self, delta_time=1 / 60):
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_pressed = pygame.mouse.get_pressed()[0]
+    def update(self, mouse_pos, delta_time=1 / 60):
         for button in self.buttons:
-            button.update(mouse_pos, mouse_pressed, delta_time)
+            button.update(mouse_pos, delta_time)
 
-    def handle_click(self):
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_pressed = pygame.mouse.get_pressed()[0]
+    def handle_click(self, mouse_pos):
         for button in self.buttons:
-            if button.clicked(mouse_pos, mouse_pressed):
+            if button.clicked(mouse_pos):
                 if button.text == "Play vs AI":
                     return "Human vs AI"
                 if button.text == "Play vs Player":

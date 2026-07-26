@@ -25,6 +25,7 @@ class AudioManager:
         self.enabled = False
         self.sound_enabled = True
         self.music_enabled = True
+        self.music_volume = 0.35
         self.sounds = {}
         self.music_available = False
         try:
@@ -47,7 +48,7 @@ class AudioManager:
 
         try:
             pygame.mixer.music.load(os.path.join(SOUND_DIR, self.MUSIC_FILE))
-            pygame.mixer.music.set_volume(0.35)
+            pygame.mixer.music.set_volume(self.music_volume)
             pygame.mixer.music.play(-1)
             self.music_available = True
         except (pygame.error, FileNotFoundError):
@@ -102,6 +103,10 @@ class AudioManager:
         self.music_enabled = enabled
         if self.enabled and self.music_available:
             try:
-                pygame.mixer.music.set_volume(0.35 if enabled else 0.0)
+                pygame.mixer.music.set_volume(self.music_volume if enabled else 0.0)
             except pygame.error:
                 pass
+
+    def set_music_volume(self, volume):
+        self.music_volume = max(0.0, min(1.0, float(volume)))
+        self.set_music_enabled(self.music_enabled)

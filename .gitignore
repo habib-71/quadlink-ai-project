@@ -13,4 +13,6 @@ __pycache__/
 .vscode/
 
 # Save Files
-saves/*.json
+data/*.json
+build/
+dist/

@@ -34,7 +34,17 @@ class Board:
         if 0 <= row < self.ROWS and 0 <= col < self.COLS:
             self.grid[row][col] = self.EMPTY
 
+    def copy(self):
+        """Return an isolated board snapshot for background Minimax search."""
+        new_board = Board()
+        new_board.grid = [row[:] for row in self.grid]
+        return new_board
+
     def check_winner(self, player):
+        return bool(self.get_winning_cells(player))
+
+    def get_winning_cells(self, player):
+        """Return one four-disc winning line, or an empty tuple when no line exists."""
         for row in range(self.ROWS):
             for col in range(self.COLS):
                 if self.grid[row][col] != player:
@@ -45,8 +55,8 @@ class Board:
                     if not (0 <= end_row < self.ROWS and 0 <= end_col < self.COLS):
                         continue
                     if all(self.grid[row + row_step * offset][col + col_step * offset] == player for offset in range(1, 4)):
-                        return True
-        return False
+                        return tuple((row + row_step * offset, col + col_step * offset) for offset in range(4))
+        return ()
 
     def get_valid_moves(self):
         return [col for col in range(self.COLS) if self.is_valid_move(col)]
