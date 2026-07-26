@@ -2,7 +2,7 @@
 
 import pygame
 
-from config import BOARD_BLUE, BOARD_DARK, RED, RED_LIGHT, SCREEN_WIDTH, WHITE, YELLOW, YELLOW_LIGHT
+from config import BOARD_BLUE, BOARD_DARK, RED, RED_LIGHT, SCREEN_WIDTH, YELLOW, YELLOW_LIGHT
 from ui import draw_shadow, lerp_color
 
 

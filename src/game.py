@@ -7,13 +7,14 @@ import pygame
 from ai import AIPlayer
 from audio import AudioManager
 from board import Board
-from config import BACKGROUND, BACKGROUND_TOP, FPS, GAME_TITLE, POP_BOLD, POP_REGULAR, PRIMARY, SCREEN_HEIGHT, SCREEN_WIDTH, SUCCESS, TEXT_COLOR, TEXT_MUTED, WHITE
+from config import BACKGROUND, BACKGROUND_TOP, FPS, GAME_TITLE, POP_BOLD, POP_REGULAR, SCREEN_HEIGHT, SCREEN_WIDTH, SUCCESS, TEXT_COLOR, TEXT_MUTED
 from difficulty import Difficulty
 from hard_ai import HardAI
 from menu import Menu
 from renderer import BoardRenderer
 from screen import ScreenManager
 from settings import Settings
+from statistics import GameStats, Statistics
 from ui import Button, draw_card
 
 
@@ -30,6 +31,7 @@ class Game:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption(GAME_TITLE)
         self.clock = pygame.time.Clock()
+        self.background_surface = self.build_background()
         self.audio = AudioManager()
 
         self.title_font = pygame.font.Font(POP_BOLD, 56)
@@ -42,6 +44,8 @@ class Game:
         self.menu = Menu(self.title_font, self.button_font)
         self.difficulty = Difficulty()
         self.settings = Settings()
+        self.stats = GameStats()
+        self.statistics = Statistics(self.stats)
         self.selected_difficulty = "Easy"
         self.game_mode = "AI"
         self.active_player = Board.PLAYER
@@ -98,15 +102,9 @@ class Game:
             self.transition_alpha = 0
             self.transition_direction = 0
 
-    def get_drop_row(self, col):
-        for row in range(self.board.ROWS - 1, -1, -1):
-            if self.board.grid[row][col] == self.board.EMPTY:
-                return row
-        return None
-
     def start_drop(self, col, player):
-        row = self.get_drop_row(col)
-        if row is None:
+        row = self.board.get_drop_row(col)
+        if row == -1:
             return False
         _, target_y = self.renderer.get_cell_center(row, col)
         self.falling_piece = {
@@ -126,6 +124,7 @@ class Game:
         if piece is None:
             return
         self.board.drop_piece(piece["col"], piece["player"])
+        self.stats.record_move()
         self.audio.play("drop")
 
         if self.board.check_winner(piece["player"]):
@@ -139,6 +138,7 @@ class Game:
                 self.audio.play("win" if piece["player"] == self.board.PLAYER else "lose")
             self.ai_thinking = False
             self.pending_ai_move = None
+            self.stats.record_result(self.game_mode, piece["player"])
             return
         if self.board.is_full():
             self.game_over = True
@@ -146,6 +146,7 @@ class Game:
             self.audio.play("draw")
             self.ai_thinking = False
             self.pending_ai_move = None
+            self.stats.record_result(self.game_mode)
             return
         if self.game_mode == "PVP":
             self.active_player = self.board.AI if piece["player"] == self.board.PLAYER else self.board.PLAYER
@@ -186,6 +187,11 @@ class Game:
                     or self.settings.back_button.rect.collidepoint(event.pos)
                 ):
                     self.audio.play("click")
+                elif current == "STATISTICS" and (
+                    self.statistics.reset_button.rect.collidepoint(event.pos)
+                    or self.statistics.back_button.rect.collidepoint(event.pos)
+                ):
+                    self.audio.play("click")
             if (
                 event.type == pygame.MOUSEBUTTONDOWN
                 and self.screen_manager.get_current_screen() == "GAME"
@@ -220,6 +226,8 @@ class Game:
                 self.request_screen("GAME")
             elif choice == "Settings":
                 self.request_screen("SETTINGS")
+            elif choice == "Statistics":
+                self.request_screen("STATISTICS")
 
         elif current == "DIFFICULTY":
             self.difficulty.update(delta_time)
@@ -241,6 +249,12 @@ class Game:
                     self.audio.set_music_enabled(self.settings.values["music"])
                     self.animation_enabled = self.settings.values["animation"]
 
+        elif current == "STATISTICS":
+            self.statistics.update(delta_time)
+            choice = None if self.wait_for_release else self.statistics.handle_click()
+            if choice == "back":
+                self.request_screen("MENU")
+
         elif current == "GAME":
             mouse = pygame.mouse.get_pos()
             pressed = pygame.mouse.get_pressed()[0]
@@ -257,14 +271,20 @@ class Game:
                     self.ai_thinking = False
 
     def draw_background(self):
+        self.screen.blit(self.background_surface, (0, 0))
+
+    def build_background(self):
+        surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         for y in range(SCREEN_HEIGHT):
             blend = y / SCREEN_HEIGHT
             color = tuple(int(a + (b - a) * blend) for a, b in zip(BACKGROUND_TOP, BACKGROUND))
-            pygame.draw.line(self.screen, color, (0, y), (SCREEN_WIDTH, y))
+            pygame.draw.line(surface, color, (0, y), (SCREEN_WIDTH, y))
+        return surface
 
     def draw_game_header(self):
         title = self.heading_font.render("QuadLink", True, TEXT_COLOR)
-        subtitle = self.info_font.render(f"{self.selected_difficulty} difficulty", True, TEXT_MUTED)
+        subtitle_text = "Player vs Player" if self.game_mode == "PVP" else f"{self.selected_difficulty} difficulty"
+        subtitle = self.info_font.render(subtitle_text, True, TEXT_MUTED)
         self.screen.blit(title, (188, 31))
         self.screen.blit(subtitle, (190, 67))
         self.back_button.draw(self.screen)
@@ -309,6 +329,8 @@ class Game:
             self.difficulty.draw(self.screen)
         elif current == "SETTINGS":
             self.settings.draw(self.screen)
+        elif current == "STATISTICS":
+            self.statistics.draw(self.screen)
         elif current == "GAME":
             self.draw_game_header()
             self.renderer.draw(self.screen, self.board)
