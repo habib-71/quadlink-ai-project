@@ -5,6 +5,7 @@ import time
 import pygame
 
 from ai import AIPlayer
+from audio import AudioManager
 from board import Board
 from config import BACKGROUND, BACKGROUND_TOP, FPS, GAME_TITLE, POP_BOLD, POP_REGULAR, PRIMARY, SCREEN_HEIGHT, SCREEN_WIDTH, SUCCESS, TEXT_COLOR, TEXT_MUTED, WHITE
 from difficulty import Difficulty
@@ -22,10 +23,13 @@ class Game:
     DROP_MAX_SPEED = 1250
 
     def __init__(self):
+        # Request a predictable PCM format for generated fallback effects.
+        pygame.mixer.pre_init(44100, -16, 2, 512)
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption(GAME_TITLE)
         self.clock = pygame.time.Clock()
+        self.audio = AudioManager()
 
         self.title_font = pygame.font.Font(POP_BOLD, 56)
         self.button_font = pygame.font.Font(POP_REGULAR, 20)
@@ -114,16 +118,19 @@ class Game:
         if piece is None:
             return
         self.board.drop_piece(piece["col"], piece["player"])
+        self.audio.play("drop")
 
         if self.board.check_winner(piece["player"]):
             self.game_over = True
             self.winner_text = "You win!" if piece["player"] == self.board.PLAYER else "AI wins"
+            self.audio.play("win" if piece["player"] == self.board.PLAYER else "lose")
             self.ai_thinking = False
             self.pending_ai_move = None
             return
         if self.board.is_full():
             self.game_over = True
             self.winner_text = "It’s a draw"
+            self.audio.play("draw")
             self.ai_thinking = False
             self.pending_ai_move = None
             return
@@ -151,6 +158,14 @@ class Game:
                 self.running = False
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r and self.game_over:
                 self.reset_game()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                current = self.screen_manager.get_current_screen()
+                if current == "MENU" and any(button.rect.collidepoint(event.pos) for button in self.menu.buttons):
+                    self.audio.play("click")
+                elif current == "DIFFICULTY" and any(card.rect.collidepoint(event.pos) for card in self.difficulty.cards.values()):
+                    self.audio.play("click")
+                elif current == "GAME" and self.back_button.rect.collidepoint(event.pos):
+                    self.audio.play("click")
             if (
                 event.type == pygame.MOUSEBUTTONDOWN
                 and self.screen_manager.get_current_screen() == "GAME"
