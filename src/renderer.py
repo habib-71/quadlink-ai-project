@@ -50,15 +50,17 @@ class BoardRenderer:
         pygame.draw.circle(screen, highlight, (x - 8, y - 9), max(4, self.piece_radius // 5))
         pygame.draw.circle(screen, lerp_color(color, (255, 255, 255), 0.2), (x, y), self.piece_radius, width=2)
 
-    def draw_hover_piece(self, screen, mouse_x, board):
+    def draw_hover_piece(self, screen, mouse_x, board, player=1):
         if self.hover_col is None or self.hover_amount <= 0.02:
             return
         center_x = self.board_x + self.hover_col * self.cell_size + self.cell_size // 2
         center_y = self.board_y - 42 - int(self.hover_amount * 4)
         radius = int(self.preview_radius * self.hover_amount)
         preview = pygame.Surface((80, 80), pygame.SRCALPHA)
-        pygame.draw.circle(preview, (*RED, int(190 * self.hover_amount)), (40, 40), radius)
-        pygame.draw.circle(preview, (*RED_LIGHT, int(180 * self.hover_amount)), (32, 31), max(3, radius // 5))
+        color = RED if player == 1 else YELLOW
+        highlight = RED_LIGHT if player == 1 else YELLOW_LIGHT
+        pygame.draw.circle(preview, (*color, int(190 * self.hover_amount)), (40, 40), radius)
+        pygame.draw.circle(preview, (*highlight, int(180 * self.hover_amount)), (32, 31), max(3, radius // 5))
         screen.blit(preview, (center_x - 40, center_y - 40))
 
     def draw_falling_piece(self, screen, col, current_y, player):

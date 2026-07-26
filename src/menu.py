@@ -12,7 +12,7 @@ class Menu:
         self.button_font = button_font
         self.buttons = [
             Button(425, 310, 350, 58, "Play vs AI", button_font, accent=True),
-            Button(425, 386, 350, 58, "Human vs Human", button_font),
+            Button(425, 386, 350, 58, "Play vs Player", button_font),
             Button(425, 462, 350, 58, "Settings", button_font),
             Button(425, 538, 350, 58, "Statistics", button_font),
             Button(425, 614, 350, 50, "Exit", button_font),
@@ -29,7 +29,11 @@ class Menu:
         mouse_pressed = pygame.mouse.get_pressed()[0]
         for button in self.buttons:
             if button.clicked(mouse_pos, mouse_pressed):
-                return "Human vs AI" if button.text == "Play vs AI" else button.text
+                if button.text == "Play vs AI":
+                    return "Human vs AI"
+                if button.text == "Play vs Player":
+                    return "Human vs Human"
+                return button.text
         return None
 
     def draw(self, screen):

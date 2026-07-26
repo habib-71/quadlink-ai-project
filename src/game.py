@@ -13,6 +13,7 @@ from hard_ai import HardAI
 from menu import Menu
 from renderer import BoardRenderer
 from screen import ScreenManager
+from settings import Settings
 from ui import Button, draw_card
 
 
@@ -40,7 +41,11 @@ class Game:
         self.screen_manager = ScreenManager()
         self.menu = Menu(self.title_font, self.button_font)
         self.difficulty = Difficulty()
+        self.settings = Settings()
         self.selected_difficulty = "Easy"
+        self.game_mode = "AI"
+        self.active_player = Board.PLAYER
+        self.animation_enabled = True
         self.easy_ai = AIPlayer()
         self.hard_ai = HardAI()
         self.ai = self.easy_ai
@@ -71,6 +76,7 @@ class Game:
         self.ai_thinking = False
         self.pending_ai_move = None
         self.falling_piece = None
+        self.active_player = self.board.PLAYER
 
     def request_screen(self, screen):
         if self.transition_target is None and screen != self.screen_manager.get_current_screen():
@@ -110,6 +116,8 @@ class Game:
             "target_y": target_y,
             "speed": 0.0,
         }
+        if not self.animation_enabled:
+            self.finish_drop()
         return True
 
     def finish_drop(self):
@@ -122,8 +130,13 @@ class Game:
 
         if self.board.check_winner(piece["player"]):
             self.game_over = True
-            self.winner_text = "You win!" if piece["player"] == self.board.PLAYER else "AI wins"
-            self.audio.play("win" if piece["player"] == self.board.PLAYER else "lose")
+            if self.game_mode == "PVP":
+                number = 1 if piece["player"] == self.board.PLAYER else 2
+                self.winner_text = f"Player {number} wins!"
+                self.audio.play("win")
+            else:
+                self.winner_text = "You win!" if piece["player"] == self.board.PLAYER else "AI wins"
+                self.audio.play("win" if piece["player"] == self.board.PLAYER else "lose")
             self.ai_thinking = False
             self.pending_ai_move = None
             return
@@ -134,7 +147,9 @@ class Game:
             self.ai_thinking = False
             self.pending_ai_move = None
             return
-        if piece["player"] == self.board.PLAYER:
+        if self.game_mode == "PVP":
+            self.active_player = self.board.AI if piece["player"] == self.board.PLAYER else self.board.PLAYER
+        elif piece["player"] == self.board.PLAYER:
             self.ai_thinking = True
             self.ai_start_time = time.time()
             self.pending_ai_move = self.ai.get_move(self.board)
@@ -166,6 +181,11 @@ class Game:
                     self.audio.play("click")
                 elif current == "GAME" and self.back_button.rect.collidepoint(event.pos):
                     self.audio.play("click")
+                elif current == "SETTINGS" and (
+                    any(button.rect.collidepoint(event.pos) for button in self.settings.toggle_buttons.values())
+                    or self.settings.back_button.rect.collidepoint(event.pos)
+                ):
+                    self.audio.play("click")
             if (
                 event.type == pygame.MOUSEBUTTONDOWN
                 and self.screen_manager.get_current_screen() == "GAME"
@@ -176,7 +196,8 @@ class Game:
             ):
                 col = (event.pos[0] - self.renderer.board_x) // self.renderer.cell_size
                 if col in self.board.get_valid_moves():
-                    self.start_drop(col, self.board.PLAYER)
+                    player = self.active_player if self.game_mode == "PVP" else self.board.PLAYER
+                    self.start_drop(col, player)
 
     def update(self, delta_time):
         self.elapsed_time += delta_time
@@ -191,7 +212,14 @@ class Game:
             if choice == "Exit":
                 self.running = False
             elif choice == "Human vs AI":
+                self.game_mode = "AI"
                 self.request_screen("DIFFICULTY")
+            elif choice == "Human vs Human":
+                self.game_mode = "PVP"
+                self.reset_game()
+                self.request_screen("GAME")
+            elif choice == "Settings":
+                self.request_screen("SETTINGS")
 
         elif current == "DIFFICULTY":
             self.difficulty.update(delta_time)
@@ -201,6 +229,17 @@ class Game:
                 self.ai = self.easy_ai if choice == "Easy" else self.hard_ai
                 self.reset_game()
                 self.request_screen("GAME")
+
+        elif current == "SETTINGS":
+            self.settings.update(delta_time)
+            choice = None if self.wait_for_release else self.settings.handle_click()
+            if choice:
+                if choice == "back":
+                    self.request_screen("MENU")
+                else:
+                    self.audio.set_sound_enabled(self.settings.values["sound"])
+                    self.audio.set_music_enabled(self.settings.values["music"])
+                    self.animation_enabled = self.settings.values["animation"]
 
         elif current == "GAME":
             mouse = pygame.mouse.get_pos()
@@ -233,6 +272,10 @@ class Game:
         if self.game_over:
             status = "Game complete"
             color = SUCCESS
+        elif self.game_mode == "PVP":
+            player_number = 1 if self.active_player == self.board.PLAYER else 2
+            status = f"Player {player_number}'s turn"
+            color = (244, 92, 112) if player_number == 1 else (250, 194, 75)
         elif self.ai_thinking:
             dots = "." * (1 + int(self.elapsed_time * 3) % 3)
             status = f"AI is thinking{dots}"
@@ -264,13 +307,16 @@ class Game:
             self.menu.draw(self.screen)
         elif current == "DIFFICULTY":
             self.difficulty.draw(self.screen)
+        elif current == "SETTINGS":
+            self.settings.draw(self.screen)
         elif current == "GAME":
             self.draw_game_header()
             self.renderer.draw(self.screen, self.board)
             if self.falling_piece is not None:
                 self.renderer.draw_falling_piece(self.screen, self.falling_piece["col"], self.falling_piece["current_y"], self.falling_piece["player"])
             if not self.game_over and not self.ai_thinking and self.falling_piece is None:
-                self.renderer.draw_hover_piece(self.screen, pygame.mouse.get_pos()[0], self.board)
+                player = self.active_player if self.game_mode == "PVP" else self.board.PLAYER
+                self.renderer.draw_hover_piece(self.screen, pygame.mouse.get_pos()[0], self.board, player)
             if self.game_over:
                 self.draw_result()
 

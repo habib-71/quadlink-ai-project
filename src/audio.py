@@ -19,10 +19,14 @@ class AudioManager:
         "lose": "lose.wav",
         "draw": "draw.wav",
     }
+    MUSIC_FILE = "background_music.ogg"
 
     def __init__(self):
         self.enabled = False
+        self.sound_enabled = True
+        self.music_enabled = True
         self.sounds = {}
+        self.music_available = False
         try:
             pygame.mixer.init()
             self.enabled = True
@@ -40,6 +44,14 @@ class AudioManager:
         for sound in self.sounds.values():
             if sound is not None:
                 sound.set_volume(0.55)
+
+        try:
+            pygame.mixer.music.load(os.path.join(SOUND_DIR, self.MUSIC_FILE))
+            pygame.mixer.music.set_volume(0.35)
+            pygame.mixer.music.play(-1)
+            self.music_available = True
+        except (pygame.error, FileNotFoundError):
+            pass
 
     def _create_fallback(self, name):
         """Create a short, distinct WAV-quality tone without asset files."""
@@ -76,8 +88,20 @@ class AudioManager:
 
     def play(self, name):
         sound = self.sounds.get(name)
-        if self.enabled and sound is not None:
+        if self.enabled and self.sound_enabled and sound is not None:
             try:
                 sound.play()
+            except pygame.error:
+                pass
+
+    def set_sound_enabled(self, enabled):
+        self.sound_enabled = enabled
+
+    def set_music_enabled(self, enabled):
+        """Store the runtime music preference and mute optional music if loaded."""
+        self.music_enabled = enabled
+        if self.enabled and self.music_available:
+            try:
+                pygame.mixer.music.set_volume(0.35 if enabled else 0.0)
             except pygame.error:
                 pass
