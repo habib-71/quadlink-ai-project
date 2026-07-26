@@ -1,150 +1,46 @@
-"""
-QuadLink Main Menu
-------------------
-Handles the main menu screen.
-"""
+"""QuadLink's animated main menu."""
 
 import pygame
 
-from config import (
-    SCREEN_WIDTH,
-    BOARD_BLUE,
-    TEXT_COLOR,
-)
-
-from ui import Button
+from config import SCREEN_WIDTH, TEXT_COLOR, TEXT_MUTED
+from ui import Button, draw_card
 
 
 class Menu:
-
-    def __init__(
-        self,
-        title_font,
-        button_font
-    ):
-
+    def __init__(self, title_font, button_font):
         self.title_font = title_font
         self.button_font = button_font
-
-
         self.buttons = [
-
-            Button(
-                425,
-                260,
-                350,
-                60,
-                "Human vs AI",
-                button_font
-            ),
-
-            Button(
-                425,
-                340,
-                350,
-                60,
-                "Human vs Human",
-                button_font
-            ),
-
-            Button(
-                425,
-                420,
-                350,
-                60,
-                "Settings",
-                button_font
-            ),
-
-            Button(
-                425,
-                500,
-                350,
-                60,
-                "Statistics",
-                button_font
-            ),
-
-            Button(
-                425,
-                580,
-                350,
-                60,
-                "Exit",
-                button_font
-            ),
+            Button(425, 310, 350, 58, "Play vs AI", button_font, accent=True),
+            Button(425, 386, 350, 58, "Human vs Human", button_font),
+            Button(425, 462, 350, 58, "Settings", button_font),
+            Button(425, 538, 350, 58, "Statistics", button_font),
+            Button(425, 614, 350, 50, "Exit", button_font),
         ]
 
-
-    def update(self):
-
+    def update(self, delta_time=1 / 60):
         mouse_pos = pygame.mouse.get_pos()
-
+        mouse_pressed = pygame.mouse.get_pressed()[0]
         for button in self.buttons:
-
-            button.update(mouse_pos)
-
-
+            button.update(mouse_pos, mouse_pressed, delta_time)
 
     def handle_click(self):
-
         mouse_pos = pygame.mouse.get_pos()
-
         mouse_pressed = pygame.mouse.get_pressed()[0]
-
-
-        if mouse_pressed:
-
-            for button in self.buttons:
-
-                if button.clicked(
-                    mouse_pos,
-                    mouse_pressed
-                ):
-
-                    return button.text
-
-
+        for button in self.buttons:
+            if button.clicked(mouse_pos, mouse_pressed):
+                return "Human vs AI" if button.text == "Play vs AI" else button.text
         return None
 
-
-
     def draw(self, screen):
+        title = self.title_font.render("QUADLINK", True, TEXT_COLOR)
+        screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 116)))
+        subtitle = self.button_font.render("A considered game of four in a row", True, TEXT_MUTED)
+        screen.blit(subtitle, subtitle.get_rect(center=(SCREEN_WIDTH // 2, 172)))
 
-        title = self.title_font.render(
-            "QUADLINK",
-            True,
-            BOARD_BLUE
-        )
-
-
-        screen.blit(
-            title,
-            (
-                SCREEN_WIDTH // 2
-                - title.get_width() // 2,
-                60
-            )
-        )
-
-
-        subtitle = self.button_font.render(
-            "Strategic Connect Four",
-            True,
-            TEXT_COLOR
-        )
-
-
-        screen.blit(
-            subtitle,
-            (
-                SCREEN_WIDTH // 2
-                - subtitle.get_width() // 2,
-                140
-            )
-        )
-
-
+        panel = pygame.Rect(380, 248, 440, 444)
+        draw_card(screen, panel, radius=26)
+        label = self.button_font.render("NEW GAME", True, TEXT_MUTED)
+        screen.blit(label, label.get_rect(center=(SCREEN_WIDTH // 2, 278)))
         for button in self.buttons:
-
             button.draw(screen)
